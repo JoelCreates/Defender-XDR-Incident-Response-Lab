@@ -80,3 +80,13 @@ DeviceNetworkEvents
 DeviceProcessEvents
 | where FileName == "notepad.exe"
 ```
+
+## Why This Matters
+This lab replicated a realistic SOC workflow:
+1. **Detection** — suspicious PowerShell execution and malicious IP activity were identified.  
+2. **Enrichment** — KQL hunting queries expanded the scope of the incident.  
+3. **Response** — an indicator and detection rule were created to prevent recurrence.  
+4. **Forensics** — evidence was collected for further analysis.  
+5. **Containment** — the compromised device was isolated to prevent lateral movement.  
+
+The same process applies in a production SOC when triaging alerts, hunting threats, and escalating incidents.
