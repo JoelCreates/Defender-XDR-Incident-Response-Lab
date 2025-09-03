@@ -1,98 +1,82 @@
 # Microsoft Defender XDR Incident Response Lab
 
 ## 📌 Overview
-This project demonstrates hands-on experience in **incident response and threat detection** using Microsoft Defender XDR.  
-The lab simulated a multi-stage attack across email and endpoint environments, requiring investigation, hunting, forensic collection, and device isolation.  
-The goal was to build practical SOC workflows that mirror real-world security operations centre (SOC) processes.
+Hands-on **incident response** in Microsoft Defender XDR: detect a simulated attack, investigate with KQL hunting, collect forensics, and contain by isolating the endpoint. Written as a SOC case-study so reviewers can see real workflows, not just a badge.
 
-Credential: [Microsoft Applied Skills – Defend against cyberthreats with Microsoft Defender XDR](<insert-your-credential-link-here>)
+**Credential:** [Microsoft Applied Skills – Defend against cyberthreats with Microsoft Defender XDR](<https://learn.microsoft.com/en-gb/users/joelamoaniokanta-1857/credentials/5f48991d010976ca?ref=https%3A%2F%2Fwww.linkedin.com%2F>)
 
 ---
 
-## 🎯 Objectives
-- Configure security controls in Microsoft 365 Defender (Safe Links, Safe Attachments, anti-phishing).  
-- Investigate simulated malicious activity across endpoints and email.  
-- Use **advanced hunting queries (KQL)** to identify suspicious events.  
-- Collect forensic evidence from a compromised endpoint.  
-- Contain the incident by isolating the affected device.  
+## Contents
+- [Objectives](#objectives)  
+- [Lab Architecture](#lab-architecture)  
+- [Tools Used](#tools-used)  
+- [What I Configured](#what-i-configured)  
+- [Investigation & Hunting](#investigation--hunting)  
+- [Forensics & Containment](#forensics--containment)  
+- [Findings](#findings)  
+- [Lessons Learned](#lessons-learned)  
+- [MITRE ATT&CK Mapping](#mitre-attck-mapping)
 
 ---
 
-## 🏗️ Lab Architecture
-- **Client1** – Management workstation for analysis.  
-- **Client2** – Simulated compromised endpoint.  
-- **Microsoft Defender XDR portal** – Central platform for investigation, detection, and response.  
-
-
----
-
-## 🛠️ Tools Used
-- Microsoft Defender XDR (formerly Microsoft 365 Defender)  
-- Advanced Hunting (KQL)  
-- Device groups and policy assignment  
-- Forensic package collection  
-- Device isolation  
+## Objectives
+- Configure M365 Defender controls (Safe Links, Safe Attachments, anti-phishing).
+- Onboard an endpoint and group it for targeted protection.
+- Hunt with **KQL** to identify suspicious PowerShell activity and malicious IPs.
+- Collect a **forensic investigation package**.
+- **Isolate** the compromised device to stop lateral movement.
 
 ---
 
-## 🔍 Steps Taken
-1. **Configured security policies**  
-   - Set up anti-phishing, Safe Links, and Safe Attachments policies.  
-   - Assigned policies to the `Group1` device group.  
-
-2. **Investigated alerts**  
-   - Analysed incidents involving suspicious email attachments and endpoint behaviour.  
-   - Correlated alerts across different entities (users, endpoints).  
-
-3. **Advanced hunting with KQL**  
-   - Queried suspicious PowerShell usage:  
-     ```kql
-     DeviceProcessEvents
-     | where FileName == "powershell.exe"
-     | where ProcessCommandLine contains "Invoke-WebRequest"
-     ```  
-   - Queried potentially malicious IP connections:  
-     ```kql
-     DeviceNetworkEvents
-     | where RemoteIPCountry != "United Kingdom"
-     | where InitiatingProcessFileName == "powershell.exe"
-     ```  
-
-4. **Collected forensic evidence**  
-   - Triggered **Investigation Package Collection** from Client2.  
-   - Downloaded and analysed `Forensics Collection Summary.csv` to review processes and persistence.  
-
-5. **Isolated compromised endpoint**  
-   - Applied **full isolation** on Client2 to prevent lateral movement while maintaining Defender cloud communication.  
+## Lab Architecture
+- **Client1** — analyst workstation (portal access).  
+- **Client2** — simulated compromised Windows endpoint.  
+- **Defender XDR portal** — investigation, hunting, and response.
 
 ---
 
-## 📊 Findings
-- Successful detection of suspicious PowerShell execution used for downloading payloads.  
-- Identified connections to malicious external IP addresses.  
-- Forensic package confirmed suspicious persistence mechanisms on Client2.  
-- Device isolation prevented further spread, demonstrating containment procedures.  
+## Tools Used
+- Microsoft Defender XDR (Microsoft 365 Defender)
+- Advanced Hunting (KQL)
+- Device groups (automation levels)
+- Indicators (IP)
+- Live Response / Investigation package
+- Device isolation
 
 ---
 
-## 🧠 Lessons Learned
-- Device groups and policy assignment are essential for targeted protection.  
-- KQL hunting enables proactive detection of activity not covered by default alerts.  
-- Forensic package collection is invaluable for validating compromise beyond alerts.  
-- Incident response requires both **automated alerts** and **manual analyst hunting**.  
+## What I Configured
+- **Device group**: `Group1` (Windows 10/11), **Full** automatic remediation, highest priority.  
+- **Security policies**: Safe Links, Safe Attachments, anti-phishing (standard hardening for mail/endpoint).  
+- **Custom indicator**: `Indicator1`  
+  - Type: **IP address** → `2.100.20.102` (malicious)  
+  - Action: **Block execution** | Severity: **High** | Category: **Execution**  
+  - Scope: **Group1**
+- **Detection rule**: `SuspiciousPowershell` (Advanced Hunting → Saved as scheduled rule, hourly)  
+  - **Scope:** All devices  
+  - **Actions:**  
+    - Collect investigation package  
+    - Mark user as compromised → **InitiatingProcessAccountObjectId**
 
 ---
 
-## 🚀 Outcomes
-- Built practical experience in Microsoft Defender XDR’s **investigate → hunt → collect → contain** workflow.  
-- Mapped lab detections to the **MITRE ATT&CK** framework:  
-  - **T1059** – Command-Line and Scripting (PowerShell)  
-  - **T1071** – Application Layer Protocol (malicious HTTP requests)  
-  - **T1078** – Valid Accounts (login attempts)  
+## Investigation & Hunting
+**Timeline highlights (Client2):**
+- *Suspicious process injection*: `powershell.exe` injecting into `notepad.exe` (CreateRemoteThread).
+- Outbound connection to **malicious IP** `2.100.20.102`.
 
----
+**KQL queries used**
+```kusto
+// Suspicious PowerShell usage (download behaviour)
+DeviceProcessEvents
+| where FileName == "powershell.exe"
 
-## 🔗 Credential
-- [Microsoft Applied Skills – Defend against cyberthreats with Microsoft Defender XDR](<insert-your-credential-link-here>)  
+// PowerShell initiating external connections
+DeviceNetworkEvents
+| where RemoteIP == "2.100.20.102"
 
----
+// Variant focused on process injection target
+DeviceProcessEvents
+| where FileName == "notepad.exe"
+```
