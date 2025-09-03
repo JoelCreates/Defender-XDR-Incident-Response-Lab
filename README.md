@@ -124,16 +124,8 @@ To validate and expand detection scope, I ran the following **KQL queries**:
 // Detect suspicious PowerShell executions
 DeviceProcessEvents
 | where FileName == "powershell.exe"
-| project Timestamp, DeviceName, InitiatingProcessFileName, ProcessCommandLine
 
 // Identify outbound connections to known malicious IP
 DeviceNetworkEvents
 | where RemoteIP == "2.100.20.102"
-| project Timestamp, DeviceName, InitiatingProcessFileName, RemoteIP, RemotePort
-
-// Detect process injection into notepad.exe
-DeviceProcessEvents
-| where FileName == "notepad.exe"
-| join kind=inner DeviceProcessEvents on DeviceId
-| project Timestamp, DeviceName, InitiatingProcessFileName, FileName, ProcessCommandLine
 ```
